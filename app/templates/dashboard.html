@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CollabBoard{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <h1 class="font-display font-700 text-2xl">Your workspaces</h1>
+  <button onclick="document.getElementById('new-ws-modal').classList.remove('hidden')"
+    class="bg-accent2 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:opacity-90">
+    + New workspace
+  </button>
+</div>
+
+<div id="workspaces" class="space-y-8"></div>
+
+<!-- New workspace modal -->
+<div id="new-ws-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-40">
+  <div class="bg-panel border border-line rounded-xl p-6 w-full max-w-sm">
+    <h2 class="font-display font-700 text-lg mb-4">New workspace</h2>
+    <input id="ws-name" placeholder="e.g. Acme Engineering"
+      class="w-full bg-panel2 border border-line rounded-lg px-3 py-2 outline-none focus:border-accent mb-4" />
+    <div class="flex justify-end gap-2">
+      <button onclick="document.getElementById('new-ws-modal').classList.add('hidden')"
+        class="text-sm text-muted px-3 py-2">Cancel</button>
+      <button onclick="createWorkspace()"
+        class="bg-accent text-ink text-sm font-semibold rounded-lg px-4 py-2">Create</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+requireAuth();
+loadNavUser();
+
+async function loadWorkspaces() {
+  const container = document.getElementById("workspaces");
+  container.innerHTML = `<p class="text-muted text-sm">Loading…</p>`;
+  const workspaces = await API.get("/api/workspaces");
+
+  if (!workspaces.length) {
+    container.innerHTML = `<p class="text-muted text-sm">No workspaces yet — create one to get started.</p>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  for (const ws of workspaces) {
+    const section = document.createElement("div");
+    section.className = "border border-line rounded-xl p-5 bg-panel";
+    section.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display font-700">${ws.name}</h2>
+        <button class="text-xs text-accent hover:underline" data-ws="${ws.id}">+ New board</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="boards-${ws.id}"></div>
+    `;
+    container.appendChild(section);
+    section.querySelector("[data-ws]").addEventListener("click", () => promptNewBoard(ws.id));
+    loadBoards(ws.id);
+  }
+}
+
+async function loadBoards(wsId) {
+  const boards = await API.get(`/api/boards/workspace/${wsId}`);
+  const el = document.getElementById(`boards-${wsId}`);
+  if (!boards.length) {
+    el.innerHTML = `<p class="text-muted text-sm col-span-3">No boards yet.</p>`;
+    return;
+  }
+  el.innerHTML = boards.map(b => `
+    <a href="/boards/${b.id}" class="block bg-panel2 border border-line rounded-lg p-4 hover:border-accent transition">
+      <div class="font-medium">${b.name}</div>
+      <div class="text-xs text-muted font-mono mt-1">open board →</div>
+    </a>
+  `).join("");
+}
+
+async function promptNewBoard(wsId) {
+  const name = prompt("Board name:");
+  if (!name) return;
+  await API.post(`/api/boards/workspace/${wsId}`, { name });
+  loadBoards(wsId);
+}
+
+async function createWorkspace() {
+  const name = document.getElementById("ws-name").value.trim();
+  if (!name) return;
+  await API.post("/api/workspaces", { name });
+  document.getElementById("new-ws-modal").classList.add("hidden");
+  document.getElementById("ws-name").value = "";
+  loadWorkspaces();
+}
+
+loadWorkspaces();
+</script>
+{% endblock %}

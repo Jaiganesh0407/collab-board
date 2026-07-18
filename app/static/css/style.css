@@ -1,0 +1,20 @@
+.font-700 { font-weight: 700; }
+
+.card-drag-over {
+  outline: 2px dashed #7CFFC4;
+  outline-offset: 4px;
+}
+
+.card-dragging {
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: #2b2f3d; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.live-dot { animation: pulse-dot 1.6s ease-in-out infinite; }

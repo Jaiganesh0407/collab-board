@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collabboard
+      POSTGRES_PASSWORD: collabboard
+      POSTGRES_DB: collabboard
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collabboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://collabboard:collabboard@db:5432/collabboard
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me-in-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+
+volumes:
+  pgdata:

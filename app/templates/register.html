@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Register — CollabBoard{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-16">
+  <h1 class="font-display font-700 text-3xl mb-1">Create your account</h1>
+  <p class="text-muted text-sm mb-8">Start organizing work with your team.</p>
+
+  <form id="register-form" class="space-y-4">
+    <div>
+      <label class="text-xs font-mono text-muted uppercase tracking-wide">Name</label>
+      <input type="text" id="name" required
+        class="w-full mt-1 bg-panel border border-line rounded-lg px-3 py-2 outline-none focus:border-accent" />
+    </div>
+    <div>
+      <label class="text-xs font-mono text-muted uppercase tracking-wide">Email</label>
+      <input type="email" id="email" required
+        class="w-full mt-1 bg-panel border border-line rounded-lg px-3 py-2 outline-none focus:border-accent" />
+    </div>
+    <div>
+      <label class="text-xs font-mono text-muted uppercase tracking-wide">Password</label>
+      <input type="password" id="password" required minlength="8"
+        class="w-full mt-1 bg-panel border border-line rounded-lg px-3 py-2 outline-none focus:border-accent" />
+      <p class="text-xs text-muted mt-1">At least 8 characters.</p>
+    </div>
+    <p id="error" class="text-warn text-sm hidden"></p>
+    <button type="submit"
+      class="w-full bg-accent text-ink font-semibold rounded-lg py-2.5 hover:opacity-90 transition">
+      Create account
+    </button>
+  </form>
+
+  <p class="text-sm text-muted mt-6">Already have an account? <a href="/login" class="text-accent hover:underline">Log in</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("error");
+  errorEl.classList.add("hidden");
+
+  try {
+    await API.request("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+
+    // auto-login after registering
+    const body = new URLSearchParams();
+    body.set("username", document.getElementById("email").value);
+    body.set("password", document.getElementById("password").value);
+    const res = await fetch("/api/auth/login", { method: "POST", body });
+    const data = await res.json();
+    API.setToken(data.access_token);
+    window.location.href = "/dashboard";
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove("hidden");
+  }
+});
+</script>
+{% endblock %}
